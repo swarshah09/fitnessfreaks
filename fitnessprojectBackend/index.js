@@ -23,13 +23,21 @@ require('dotenv').config();
 require('./db')
 
 app.use(bodyParser.json());
-const allowedOrigins = 'http://localhost:8080';
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'http://localhost:8080'
+];
 
 app.use(
     cors({
         origin: allowedOrigins,
-        methods: ["POST", "GET"],
-        credentials: true, // Allow credentials
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
     })
 );
 app.use(cookieParser());
