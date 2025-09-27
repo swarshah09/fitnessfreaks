@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import { api, endpoints } from '@/integrations/api/client';
 
 interface UserProfile {
   id: string;
@@ -37,21 +37,38 @@ export function useProfile() {
       setIsLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        setError(error.message);
-      } else {
-        setProfile(data);
+      const { data } = await api.get(endpoints.me);
+      if (!data) {
+        setProfile(null);
+        return;
       }
-    } catch (err) {
+
+      const lastWeight = Array.isArray(data.weight) && data.weight.length > 0
+        ? data.weight[data.weight.length - 1].weight
+        : null;
+      const lastHeight = Array.isArray(data.height) && data.height.length > 0
+        ? data.height[data.height.length - 1].height
+        : null;
+
+      const mapped: UserProfile = {
+        id: data._id,
+        user_id: data._id,
+        name: data.name ?? null,
+        email: data.email ?? null,
+        weight: lastWeight,
+        height: lastHeight,
+        gender: data.gender ?? null,
+        date_of_birth: data.dob ?? null,
+        goal: data.goal ?? null,
+        activity_level: data.activityLevel ?? null,
+        created_at: data.createdAt ?? new Date().toISOString(),
+        updated_at: data.updatedAt ?? new Date().toISOString(),
+      };
+
+      setProfile(mapped);
+    } catch (err: any) {
       console.error('Error:', err);
-      setError('Failed to fetch profile');
+      setError(err?.response?.data?.message || 'Failed to fetch profile');
     } finally {
       setIsLoading(false);
     }
@@ -59,25 +76,8 @@ export function useProfile() {
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: 'No user logged in' };
-
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error updating profile:', error);
-        return { error: error.message };
-      }
-
-      // Refresh profile data
-      await fetchProfile();
-      return { error: null };
-    } catch (err) {
-      console.error('Error:', err);
-      return { error: 'Failed to update profile' };
-    }
+    // Not implemented; backend update endpoint is not present
+    return { error: 'Not implemented' };
   };
 
   return {
