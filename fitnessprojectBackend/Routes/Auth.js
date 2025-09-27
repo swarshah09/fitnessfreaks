@@ -147,6 +147,17 @@ router.post('/checklogin', authTokenHandler, async (req, res, next) => {
     });
 });
 
+// Logout - clear auth cookies
+router.post('/logout', async (req, res) => {
+    try {
+        res.clearCookie('authToken');
+        res.clearCookie('refreshToken');
+        return res.status(200).json(createResponse(true, 'Logged out successfully'));
+    } catch (err) {
+        return res.status(500).json(createResponse(false, 'Failed to logout'));
+    }
+});
+
 router.use(errorHandler);
 
 module.exports = router;
