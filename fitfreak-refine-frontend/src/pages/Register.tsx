@@ -40,13 +40,35 @@ export default function Register() {
       return;
     }
 
+    if (
+      !formData.name ||
+      !formData.email ||
+      !formData.weightInKg ||
+      !formData.heightInCm ||
+      !formData.gender ||
+      !formData.dob ||
+      !formData.goal ||
+      !formData.activityLevel
+    ) {
+      toast.error("Please fill out all required fields");
+      return;
+    }
+
+    const weightValue = parseFloat(formData.weightInKg);
+    const heightValue = parseFloat(formData.heightInCm);
+
+    if (!weightValue || weightValue <= 0 || !heightValue || heightValue <= 0) {
+      toast.error("Please provide valid height and weight values");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const metadata = {
         name: formData.name,
-        weight: parseFloat(formData.weightInKg) || 0,
-        height: parseFloat(formData.heightInCm) || 0,
+        weight: weightValue,
+        height: heightValue,
         gender: formData.gender,
         date_of_birth: formData.dob,
         goal: formData.goal,

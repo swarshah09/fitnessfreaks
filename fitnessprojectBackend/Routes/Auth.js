@@ -8,6 +8,7 @@ const authTokenHandler = require('../Middlewares/checkAuthToken');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const { authCookieOptions, refreshCookieOptions, baseCookieOptions } = require('../utils/cookieOptions');
 
 //ardo snju okez dpwp
 const transporter = nodemailer.createTransport({
@@ -17,6 +18,40 @@ const transporter = nodemailer.createTransport({
         pass: 'lylthahyxjuyzyhn'
     }
 });
+
+const sanitizeUser = (user) => {
+    if (!user) return null;
+    const userObj = user.toObject ? user.toObject() : { ...user };
+    delete userObj.password;
+    return userObj;
+};
+
+const normalizeEmail = (email = '') => email.trim().toLowerCase();
+
+function validateRegistrationPayload(payload) {
+    const {
+        name,
+        email,
+        password,
+        weightInKg,
+        heightInCm,
+        gender,
+        dob,
+        goal,
+        activityLevel,
+    } = payload;
+
+    if (!name?.trim()) return 'Name is required';
+    if (!email) return 'Email is required';
+    if (!password || password.length < 6) return 'Password must be at least 6 characters';
+    if (!Number.isFinite(weightInKg) || weightInKg <= 0) return 'Weight must be a positive number';
+    if (!Number.isFinite(heightInCm) || heightInCm <= 0) return 'Height must be a positive number';
+    if (!gender) return 'Gender is required';
+    if (!dob) return 'Date of birth is required';
+    if (!goal) return 'Goal is required';
+    if (!activityLevel) return 'Activity level is required';
+    return null;
+}
 
 router.get('/test', async (req, res) => {
     res.json({
@@ -34,10 +69,11 @@ function createResponse(ok, message, data) {
 
 router.get('/user', authTokenHandler, async (req, res) => {
     try {
-        const user = await User.findById(req.userId);
+        const user = await User.findById(req.userId).lean();
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        delete user.password;
         res.status(200).json(user);
     } catch (error) {
         console.error('Error fetching user details:', error);
@@ -46,29 +82,59 @@ router.get('/user', authTokenHandler, async (req, res) => {
 });
 
 router.post('/register', async (req, res, next) => {
-    console.log(req.body);
     try {
-        const { name, email, password, weightInKg, heightInCm, gender, dob, goal, activityLevel } = req.body;
-        const existingUser = await User.findOne({ email: email });
+        const {
+            name,
+            email,
+            password,
+            weightInKg,
+            heightInCm,
+            gender,
+            dob,
+            goal,
+            activityLevel
+        } = req.body;
+
+        const normalizedEmail = normalizeEmail(email || '');
+        const numericWeight = Number(weightInKg);
+        const numericHeight = Number(heightInCm);
+
+        const validationError = validateRegistrationPayload({
+            name,
+            email: normalizedEmail,
+            password,
+            weightInKg: numericWeight,
+            heightInCm: numericHeight,
+            gender,
+            dob,
+            goal,
+            activityLevel,
+        });
+
+        if (validationError) {
+            return res.status(400).json(createResponse(false, validationError));
+        }
+
+        const existingUser = await User.findOne({ email: normalizedEmail });
 
         if (existingUser) {
             return res.status(409).json(createResponse(false, 'Email already exists'));
         }
         const newUser = new User({
-            name,
+            name: name.trim(),
             password,
-            email,
+            email: normalizedEmail,
             weight: [
                 {
-                    weight: weightInKg,
+                    weight: numericWeight,
                     unit: "kg",
-                    date: Date.now()
+                    date: new Date()
                 }
             ],
             height: [
                 {
-                    height: heightInCm,
-                    date: Date.now(),
+                    height: numericHeight,
+                    date: new Date(),
                     unit: "cm"
                 }
             ],
@@ -77,9 +143,11 @@ router.post('/register', async (req, res, next) => {
             goal,
             activityLevel
         });
-        await newUser.save(); // Await the save operation
+        await newUser.save();
 
-        res.status(201).json(createResponse(true, 'User registered successfully'));
+        res.status(201).json(createResponse(true, 'User registered successfully', {
+            user: sanitizeUser(newUser)
+        }));
 
     }
     catch (err) {
@@ -90,7 +158,11 @@ router.post('/register', async (req, res, next) => {
 router.post('/login', async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        if (!email || !password) {
+            return res.status(400).json(createResponse(false, 'Email and password are required'));
+        }
+
+        const user = await User.findOne({ email: normalizeEmail(email) });
         if (!user) {
             return res.status(400).json(createResponse(false, 'Invalid credentials'));
         }
@@ -102,11 +174,12 @@ router.post('/login', async (req, res, next) => {
         const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '50m' });
         const refreshToken = jwt.sign({ userId: user._id }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '100m' });
 
-        res.cookie('authToken', authToken, { httpOnly: true });
-        res.cookie('refreshToken', refreshToken, { httpOnly: true });
+        res.cookie('authToken', authToken, authCookieOptions);
+        res.cookie('refreshToken', refreshToken, refreshCookieOptions);
         res.status(200).json(createResponse(true, 'Login successful', {
             authToken,
-            refreshToken
+            refreshToken,
+            user: sanitizeUser(user)
         }));
     }
     catch (err) {
@@ -114,7 +187,7 @@ router.post('/login', async (req, res, next) => {
     }
 });
 
-router.post('/sendotp', async (req, res) => {
+router.post('/sendotp', async (req, res, next) => {
     try {
         const { email } = req.body;
         const otp = Math.floor(100000 + Math.random() * 900000);
@@ -150,8 +223,8 @@ router.post('/checklogin', authTokenHandler, async (req, res, next) => {
 // Logout - clear auth cookies
 router.post('/logout', async (req, res) => {
     try {
-        res.clearCookie('authToken');
-        res.clearCookie('refreshToken');
+        res.clearCookie('authToken', baseCookieOptions);
+        res.clearCookie('refreshToken', baseCookieOptions);
         return res.status(200).json(createResponse(true, 'Logged out successfully'));
     } catch (err) {
         return res.status(500).json(createResponse(false, 'Failed to logout'));

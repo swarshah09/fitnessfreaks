@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { api, endpoints } from '@/integrations/api/client';
 
@@ -23,16 +23,23 @@ export function useProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      fetchProfile();
-    } else {
-      setIsLoading(false);
-      setProfile(null);
+  const getErrorMessage = (err: unknown, fallback: string) => {
+    if (typeof err === 'string') {
+      return err;
     }
-  }, [isAuthenticated, user]);
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+    if (err && typeof err === 'object') {
+      const maybeResponse = err as { response?: { data?: { message?: string } } };
+      if (typeof maybeResponse.response?.data?.message === 'string') {
+        return maybeResponse.response.data.message;
+      }
+    }
+    return fallback;
+  };
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -66,13 +73,22 @@ export function useProfile() {
       };
 
       setProfile(mapped);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error:', err);
-      setError(err?.response?.data?.message || 'Failed to fetch profile');
+      setError(getErrorMessage(err, 'Failed to fetch profile'));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchProfile();
+    } else {
+      setIsLoading(false);
+      setProfile(null);
+    }
+  }, [isAuthenticated, user, fetchProfile]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return { error: 'No user logged in' };

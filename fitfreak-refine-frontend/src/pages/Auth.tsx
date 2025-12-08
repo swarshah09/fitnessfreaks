@@ -37,7 +37,8 @@ export default function Auth() {
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
+  const [isRegisterLoading, setIsRegisterLoading] = useState(false);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsLoginLoading(true);
 
     try {
       const { error } = await signIn(loginData.email, loginData.password);
@@ -63,7 +64,7 @@ export default function Auth() {
       console.error('Login error:', error);
       toast.error('Network error. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }
   };
 
@@ -75,7 +76,23 @@ export default function Auth() {
       return;
     }
 
-    setIsLoading(true);
+    if (
+      !registerData.name ||
+      !registerData.email ||
+      !registerData.password ||
+      !registerData.confirmPassword ||
+      !registerData.weight ||
+      !registerData.height ||
+      !registerData.gender ||
+      !registerData.dob ||
+      !registerData.goal ||
+      !registerData.activityLevel
+    ) {
+      toast.error('Please fill out all required fields');
+      return;
+    }
+
+    setIsRegisterLoading(true);
 
     try {
       const metadata = {
@@ -100,7 +117,7 @@ export default function Auth() {
       console.error('Registration error:', error);
       toast.error('Network error. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsRegisterLoading(false);
     }
   };
 
@@ -167,8 +184,8 @@ export default function Auth() {
                   </div>
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
+                <Button type="submit" className="w-full" disabled={isLoginLoading}>
+                  {isLoginLoading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
             </TabsContent>
@@ -333,38 +350,37 @@ export default function Auth() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="register-goal">Fitness Goal</Label>
-                    <Select value={registerData.goal} onValueChange={(value) => setRegisterData(prev => ({ ...prev, goal: value }))}>
+                  <Select value={registerData.goal} onValueChange={(value) => setRegisterData(prev => ({ ...prev, goal: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select goal" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="weight_loss">Weight Loss</SelectItem>
-                        <SelectItem value="muscle_gain">Muscle Gain</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="endurance">Endurance</SelectItem>
+                      <SelectItem value="weightLoss">Weight Loss</SelectItem>
+                      <SelectItem value="weightGain">Weight Gain</SelectItem>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="register-activity">Activity Level</Label>
-                    <Select value={registerData.activityLevel} onValueChange={(value) => setRegisterData(prev => ({ ...prev, activityLevel: value }))}>
+                  <Select value={registerData.activityLevel} onValueChange={(value) => setRegisterData(prev => ({ ...prev, activityLevel: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select level" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sedentary">Sedentary</SelectItem>
-                        <SelectItem value="lightly_active">Lightly Active</SelectItem>
-                        <SelectItem value="moderately_active">Moderately Active</SelectItem>
-                        <SelectItem value="very_active">Very Active</SelectItem>
-                        <SelectItem value="extremely_active">Extremely Active</SelectItem>
+                      <SelectItem value="sedentary">Sedentary</SelectItem>
+                      <SelectItem value="light">Light Activity</SelectItem>
+                      <SelectItem value="moderate">Moderate Activity</SelectItem>
+                      <SelectItem value="active">Very Active</SelectItem>
+                      <SelectItem value="extra">Extra Active</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Creating account...' : 'Create Account'}
+                <Button type="submit" className="w-full" disabled={isRegisterLoading}>
+                  {isRegisterLoading ? 'Creating account...' : 'Create Account'}
                 </Button>
               </form>
             </TabsContent>

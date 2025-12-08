@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,8 @@ import {
   Weight,
   Activity
 } from "lucide-react";
+import { api } from "@/integrations/api/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DailyReport {
   name: string;
@@ -44,33 +46,33 @@ export default function Analytics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dailyReport, setDailyReport] = useState<DailyReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    fetchDailyReport();
-  }, []);
-
-  const fetchDailyReport = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-
+  const fetchDailyReport = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/report/getreport`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (data.ok) {
+      setIsLoading(true);
+      const { data } = await api.get('/report/getreport');
+      if (data?.ok) {
         setDailyReport(data.data);
+      } else {
+        setDailyReport([]);
       }
     } catch (error) {
       console.error('Error fetching daily report:', error);
+      setDailyReport([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDailyReport();
+    } else {
+      setDailyReport([]);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, fetchDailyReport]);
 
   // Mock data for charts - in real app, this would come from your backend
   const weeklyProgress = [

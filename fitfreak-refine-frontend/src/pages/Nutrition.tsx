@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import {
   TrendingUp,
   Utensils
 } from "lucide-react";
+import { api } from "@/integrations/api/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface CalorieEntry {
   item: string;
@@ -37,64 +39,66 @@ export default function Nutrition() {
   const [calorieGoal, setCalorieGoal] = useState<CalorieGoal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isGoalLoading, setIsGoalLoading] = useState(true);
 
   // Add food form state
   const [foodItem, setFoodItem] = useState("");
   const [quantity, setQuantity] = useState("");
   const [quantityType, setQuantityType] = useState("g");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    fetchTodaysCalories();
-    fetchCalorieGoal();
-  }, []);
-
-  const fetchTodaysCalories = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-
+  const fetchTodaysCalories = useCallback(async (targetDate: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/calorieintake/getcalorieintakebydate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ date: selectedDate }),
-      });
-
-      const data = await response.json();
-      
-      if (data.ok) {
+      setIsLoading(true);
+      const { data } = await api.post('/calorieintake/getcalorieintakebydate', { date: targetDate });
+      if (data?.ok) {
         setCalorieEntries(data.data);
+      } else {
+        setCalorieEntries([]);
       }
     } catch (error) {
       console.error('Error fetching calories:', error);
+      setCalorieEntries([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchCalorieGoal = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-
+  const fetchCalorieGoal = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/calorieintake/getgoalcalorieintake`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-      
-      if (data.ok) {
+      setIsGoalLoading(true);
+      const { data } = await api.get('/calorieintake/getgoalcalorieintake');
+      if (data?.ok) {
         setCalorieGoal(data.data);
+      } else {
+        setCalorieGoal(null);
       }
     } catch (error) {
       console.error('Error fetching calorie goal:', error);
+      setCalorieGoal(null);
+    } finally {
+      setIsGoalLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCalorieGoal();
+    } else {
+      setCalorieGoal(null);
+      setIsGoalLoading(false);
+    }
+  }, [isAuthenticated, fetchCalorieGoal]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTodaysCalories(selectedDate);
+    } else {
+      setCalorieEntries([]);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, selectedDate, fetchTodaysCalories]);
 
   const addCalorieEntry = async () => {
     if (!foodItem || !quantity) {
@@ -106,38 +110,47 @@ export default function Nutrition() {
       return;
     }
 
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please sign in to log calories",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const parsedQuantity = parseFloat(quantity);
+    if (!parsedQuantity || parsedQuantity <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid quantity",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsAdding(true);
-    const token = localStorage.getItem('authToken');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/calorieintake/addcalorieintake`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          item: foodItem,
-          date: selectedDate,
-          quantity: parseFloat(quantity),
-          quantitytype: quantityType,
-        }),
+      const { data } = await api.post('/calorieintake/addcalorieintake', {
+        item: foodItem,
+        date: selectedDate,
+        quantity: parsedQuantity,
+        quantitytype: quantityType,
       });
 
-      const data = await response.json();
-      
-      if (data.ok) {
+      if (data?.ok) {
         toast({
           title: "Success",
           description: "Food item added successfully!",
         });
         setFoodItem("");
         setQuantity("");
-        fetchTodaysCalories(); // Refresh the list
+        fetchTodaysCalories(selectedDate);
       } else {
         toast({
           title: "Error",
-          description: data.message || "Failed to add food item",
+          description: data?.message || "Failed to add food item",
           variant: "destructive",
         });
       }
@@ -180,10 +193,7 @@ export default function Nutrition() {
                 id="date"
                 type="date"
                 value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value);
-                  fetchTodaysCalories();
-                }}
+                onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-auto"
               />
             </div>
@@ -213,7 +223,7 @@ export default function Nutrition() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-800">
-                  {calorieGoal?.maxCalorieIntake || 0}
+                  {isGoalLoading ? '—' : calorieGoal?.maxCalorieIntake || 0}
                 </div>
                 <p className="text-sm text-blue-600">kcal target</p>
               </CardContent>
