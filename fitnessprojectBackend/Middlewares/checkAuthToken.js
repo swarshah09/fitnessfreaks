@@ -40,11 +40,8 @@ function checkAuth(req, res, next) {
                 if (refreshErr) {
                     return unauthorized(res, 'Authentication failed: Both tokens are invalid');
                 } else {
-<<<<<<< Updated upstream
-                    const newAuthToken = jwt.sign({ userId: refreshDecoded.userId }, process.env.JWT_SECRET_KEY, { expiresIn: '10m' });
-=======
+                    
                     const newAuthToken = jwt.sign({ userId: refreshDecoded.userId }, process.env.JWT_SECRET_KEY, { expiresIn: '50m' });
->>>>>>> Stashed changes
                     const newRefreshToken = jwt.sign({ userId: refreshDecoded.userId }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '10d' });
 
                     res.cookie('authToken', newAuthToken, authCookieOptions);
