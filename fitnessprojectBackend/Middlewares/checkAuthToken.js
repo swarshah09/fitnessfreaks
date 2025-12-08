@@ -1,41 +1,59 @@
 const jwt = require('jsonwebtoken');
+const { authCookieOptions, refreshCookieOptions } = require('../utils/cookieOptions');
+
+const unauthorized = (res, message) => res.status(401).json({ message, ok: false });
+
+const decodeToken = (token, secret) => {
+    try {
+        return jwt.verify(token, secret);
+    } catch (err) {
+        return null;
+    }
+};
 
 function checkAuth(req, res, next) {
-    const authToken = req.cookies.authToken;
-    const refreshToken = req.cookies.refreshToken;
+    const cookies = req.cookies || {};
+    const cookieAuthToken = cookies.authToken;
+    const refreshToken = cookies.refreshToken;
 
-    // console.log("Check Auth Token MIDDLEWARE CALLED", authToken)
+    const authHeader = req.headers.authorization;
+    const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+        ? authHeader.split(' ')[1]
+        : null;
 
-    if (!authToken || !refreshToken) {
-        return res.status(401).json({ message: 'Authentication failed: No authToken or refreshToken provided' , ok : false });
+    if (!cookieAuthToken && !refreshToken && bearerToken) {
+        const decoded = decodeToken(bearerToken, process.env.JWT_SECRET_KEY);
+        if (!decoded) {
+            return unauthorized(res, 'Authentication failed: Invalid bearer token');
+        }
+        req.userId = decoded.userId;
+        return next();
     }
 
-    jwt.verify(authToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
+    if (!cookieAuthToken || !refreshToken) {
+        return unauthorized(res, 'Authentication failed: No authToken or refreshToken provided');
+    }
+
+    jwt.verify(cookieAuthToken, process.env.JWT_SECRET_KEY, (err, decoded) => {
         if (err) {
-            // Error handling for expired or invalid authToken
             jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET_KEY, (refreshErr, refreshDecoded) => {
                 if (refreshErr) {
-                    // Both tokens are invalid
-                    return res.status(401).json({ message: 'Authentication failed: Both tokens are invalid', ok: false });
+                    return unauthorized(res, 'Authentication failed: Both tokens are invalid');
                 } else {
-                    // Generate new auth and refresh tokens
                     const newAuthToken = jwt.sign({ userId: refreshDecoded.userId }, process.env.JWT_SECRET_KEY, { expiresIn: '10m' });
                     const newRefreshToken = jwt.sign({ userId: refreshDecoded.userId }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: '10d' });
-        
-                    // Set the new tokens as cookies in the response
-                    res.cookie('authToken', newAuthToken, { httpOnly: true });
-                    res.cookie('refreshToken', newRefreshToken, { httpOnly: true });
-        
-                    // Continue processing the request with the new auth token
+
+                    res.cookie('authToken', newAuthToken, authCookieOptions);
+                    res.cookie('refreshToken', newRefreshToken, refreshCookieOptions);
+
                     req.userId = refreshDecoded.userId;
                     req.ok = true;
-                    next();
+                    return next();
                 }
             });
-        }else {
-            // Auth token is valid, continue with the request
+        } else {
             req.userId = decoded.userId;
-            next();
+            return next();
         }
     });
 }

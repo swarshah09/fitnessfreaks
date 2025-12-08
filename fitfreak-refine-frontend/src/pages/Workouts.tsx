@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import {
   Target,
   Zap
 } from "lucide-react";
+import { api } from "@/integrations/api/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Exercise {
   name: string;
@@ -43,22 +45,18 @@ export default function Workouts() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDuration, setFilterDuration] = useState("");
+  const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    fetchWorkouts();
-  }, []);
-
-  const fetchWorkouts = async () => {
+  const fetchWorkouts = useCallback(async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/workoutplans/workouts`);
-      const data = await response.json();
-      
-      if (data.ok) {
+      setIsLoading(true);
+      const { data } = await api.get('/workoutplans/workouts');
+      if (data?.ok) {
         setWorkouts(data.data);
       } else {
         toast({
           title: "Error",
-          description: "Failed to fetch workouts",
+          description: data?.message || "Failed to fetch workouts",
           variant: "destructive",
         });
       }
@@ -71,29 +69,36 @@ export default function Workouts() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWorkouts();
+    } else {
+      setWorkouts([]);
+      setIsLoading(false);
+    }
+  }, [isAuthenticated, fetchWorkouts]);
 
   const startWorkout = async (workoutId: string) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please sign in to log workouts.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/workouttrack/addworkoutentry`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          date: new Date().toISOString(),
-          exercise: workouts.find(w => w._id === workoutId)?.name || "Workout",
-          durationInMinutes: workouts.find(w => w._id === workoutId)?.durationInMinutes || 30,
-        }),
+      const workout = workouts.find((w) => w._id === workoutId);
+      const { data } = await api.post('/workouttrack/addworkoutentry', {
+        date: new Date().toISOString(),
+        exercise: workout?.name || "Workout",
+        durationInMinutes: workout?.durationInMinutes || 30,
       });
 
-      const data = await response.json();
-      
-      if (data.ok) {
+      if (data?.ok) {
         toast({
           title: "Success",
           description: "Workout started and logged!",
@@ -101,7 +106,7 @@ export default function Workouts() {
       } else {
         toast({
           title: "Error",
-          description: data.message || "Failed to start workout",
+          description: data?.message || "Failed to start workout",
           variant: "destructive",
         });
       }
