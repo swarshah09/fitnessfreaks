@@ -48,14 +48,18 @@ const allowedOrigins = [
     'http://127.0.0.1:4173',
     'http://localhost:8080',
     'https://fitnessfreaks-bay.vercel.app',
-    'https://fitnessfreaks-git-main-swarshah09s-projects.vercel.app',
-    'https://fitnessfreaks-lkhbva3v1-swarshah09s-projects.vercel.app',
-    'https://*.vercel.app/'
 ];
+const vercelRegex = /\.vercel\.app$/;
 
 app.use(
     cors({
-        origin: allowedOrigins,
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin) || vercelRegex.test(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('Not allowed by CORS'));
+        },
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
@@ -66,7 +70,13 @@ app.use(cookieParser());
 // Socket.io setup
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
+        origin: function (origin, callback) {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin) || vercelRegex.test(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('Not allowed by CORS'));
+        },
         credentials: true,
     },
 });
