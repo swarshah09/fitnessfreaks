@@ -47,7 +47,10 @@ const allowedOrigins = [
     'http://localhost:4173',
     'http://127.0.0.1:4173',
     'http://localhost:8080',
-    'https://fitnessfreaks-bay.vercel.app'
+    'https://fitnessfreaks-bay.vercel.app',
+    'https://fitnessfreaks-git-main-swarshah09s-projects.vercel.app',
+    'https://fitnessfreaks-lkhbva3v1-swarshah09s-projects.vercel.app',
+    'https://*.vercel.app/'
 ];
 
 app.use(
