@@ -70,8 +70,20 @@ COMPANY_EMAIL= your_email
 CLOUDINARY_CLOUD_NAME = your_cloudinary_cloud_name
 CLOUDINARY_API_KEY = your_cloudinary_api_key
 CLOUDINARY_API_SECRET = your_cloudinary_api_secret
-NUTRITION_API_KEY = '......'
+
+# Edamam Nutrition API (for detailed nutrition tracking)
+# Get your free API credentials at: https://developer.edamam.com/
+EDAMAM_APP_ID=your_edamam_app_id
+EDAMAM_APP_KEY=your_edamam_app_key
 ```
+
+### Setting up Edamam Nutrition API
+
+1. Visit [Edamam Developer Portal](https://developer.edamam.com/)
+2. Sign up for a free account
+3. Create a new application to get your `APP_ID` and `APP_KEY`
+4. Add the credentials to your `.env` file as shown above
+5. The free tier includes 10,000 API calls per month, which is sufficient for development and small-scale production use
 
 ## API Endpoints
 

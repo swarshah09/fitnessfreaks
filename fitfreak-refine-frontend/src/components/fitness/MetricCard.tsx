@@ -123,12 +123,12 @@ export function MetricCard({
           {(onAdd || onView) && (
             <div className="flex gap-2 pt-2">
               {onAdd && (
-                <Button size="sm" className="flex-1">
+                <Button size="sm" className="flex-1" onClick={onAdd}>
                   Add
                 </Button>
               )}
               {onView && (
-                <Button size="sm" variant="outline" className="flex-1">
+                <Button size="sm" variant="outline" className="flex-1" onClick={onView}>
                   View
                 </Button>
               )}

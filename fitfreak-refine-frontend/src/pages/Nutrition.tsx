@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 import { 
   Plus, 
   Apple, 
@@ -27,6 +28,8 @@ interface CalorieEntry {
   quantity: number;
   quantitytype: string;
   calorieIntake: number;
+  protein?: number;
+  carbs?: number;
 }
 
 interface CalorieGoal {
@@ -47,6 +50,7 @@ export default function Nutrition() {
   const [quantityType, setQuantityType] = useState("g");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const { isAuthenticated } = useAuth();
+  const { profile } = useProfile();
 
   const fetchTodaysCalories = useCallback(async (targetDate: string) => {
     try {
@@ -154,10 +158,12 @@ export default function Nutrition() {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Network error while adding food item";
+      console.error('Error adding calorie entry:', error);
       toast({
         title: "Error",
-        description: "Network error while adding food item",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -166,7 +172,49 @@ export default function Nutrition() {
   };
 
   const totalCalories = calorieEntries.reduce((sum, entry) => sum + entry.calorieIntake, 0);
+  const totalProtein = calorieEntries.reduce((sum, entry) => sum + (entry.protein ?? 0), 0);
+  const totalCarbs = calorieEntries.reduce((sum, entry) => sum + (entry.carbs ?? 0), 0);
+
+  // Macro goals derived from user's profile (rough defaults if missing)
+  const getMacroGoals = () => {
+    const weightKg = profile?.weight || 70;
+    const goal = profile?.goal || "maintenance";
+    const activity = profile?.activity_level || profile?.activityLevel || "moderate";
+
+    // Protein multipliers (g/kg)
+    const baseProtein =
+      goal === "weightLoss" ? 1.8 :
+      goal === "weightGain" ? 2.0 : 1.6;
+
+    const activityBump =
+      activity === "sedentary" ? 0 :
+      activity === "light" ? 0.1 :
+      activity === "moderate" ? 0.2 :
+      activity === "active" ? 0.3 : 0.35;
+
+    const proteinGoal = Math.round((baseProtein + activityBump) * weightKg);
+
+    // Carbs multipliers (g/kg)
+    const baseCarbs =
+      goal === "weightLoss" ? 3.0 :
+      goal === "weightGain" ? 5.0 : 4.0;
+
+    const carbActivityBump =
+      activity === "sedentary" ? 0 :
+      activity === "light" ? 0.25 :
+      activity === "moderate" ? 0.5 :
+      activity === "active" ? 0.75 : 1.0;
+
+    const carbsGoal = Math.round((baseCarbs + carbActivityBump) * weightKg);
+
+    return { proteinGoal, carbsGoal };
+  };
+
+  const { proteinGoal, carbsGoal } = getMacroGoals();
+
   const calorieProgress = calorieGoal ? (totalCalories / calorieGoal.maxCalorieIntake) * 100 : 0;
+  const proteinProgress = proteinGoal > 0 ? (totalProtein / proteinGoal) * 100 : 0;
+  const carbsProgress = carbsGoal > 0 ? (totalCarbs / carbsGoal) * 100 : 0;
   const remainingCalories = calorieGoal ? calorieGoal.maxCalorieIntake - totalCalories : 0;
 
   return (
@@ -199,7 +247,7 @@ export default function Nutrition() {
             </div>
           </div>
 
-          {/* Calorie Overview Cards */}
+          {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
               <CardHeader className="pb-3">
@@ -241,6 +289,45 @@ export default function Nutrition() {
                   {remainingCalories > 0 ? remainingCalories : 0}
                 </div>
                 <p className="text-sm text-green-600">kcal left</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Protein & Carbs Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-indigo-700">
+                  <Target className="h-5 w-5" />
+                  Protein Intake
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-3xl font-bold text-indigo-800">
+                  {totalProtein.toFixed(1)} g
+                </div>
+                <p className="text-sm text-indigo-600">
+                  Goal: {proteinGoal} g
+                </p>
+                <Progress value={Math.min(proteinProgress, 100)} className="h-3" />
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-emerald-700">
+                  <Target className="h-5 w-5" />
+                  Carbs Intake
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-3xl font-bold text-emerald-800">
+                  {totalCarbs.toFixed(1)} g
+                </div>
+                <p className="text-sm text-emerald-600">
+                  Goal: {carbsGoal} g
+                </p>
+                <Progress value={Math.min(carbsProgress, 100)} className="h-3" />
               </CardContent>
             </Card>
           </div>
@@ -361,16 +448,26 @@ export default function Nutrition() {
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {calorieEntries.map((entry, index) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div>
+                        <div className="space-y-1">
                           <p className="font-medium">{entry.item}</p>
                           <p className="text-sm text-muted-foreground">
                             {entry.quantity}{entry.quantitytype}
                           </p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">
+                              {entry.calorieIntake} kcal
+                            </span>
+                            {entry.protein !== undefined && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-indigo-100 text-indigo-700">
+                                {entry.protein.toFixed(1)} g protein
+                              </span>
+                            )}
+                            {entry.carbs !== undefined && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                                {entry.carbs.toFixed(1)} g carbs
+                              </span>
+                            )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-orange-600">
-                            {entry.calorieIntake} kcal
-                          </p>
                         </div>
                       </div>
                     ))}

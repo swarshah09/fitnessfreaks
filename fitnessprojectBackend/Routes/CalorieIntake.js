@@ -31,43 +31,135 @@ router.post('/addcalorieintake', authTokenHandler, async (req, res) => {
         if (!item || !date || !quantity || !quantitytype) {
             return res.status(400).json(createResponse(false, 'Please provide all the details'));
         }
+
+        // Validate quantity is a number
+        const parsedQuantity = parseFloat(quantity);
+        if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+            return res.status(400).json(createResponse(false, 'Invalid quantity. Please provide a valid positive number'));
+        }
+
+        // Calculate qtyingrams based on quantity type
         let qtyingrams = 0;
         if (quantitytype === 'g') {
-            qtyingrams = quantity;
+            qtyingrams = parsedQuantity;
         } else if (quantitytype === 'kg') {
-            qtyingrams = quantity * 1000;
+            qtyingrams = parsedQuantity * 1000;
         } else if (quantitytype === 'ml') {
-            qtyingrams = quantity;
+            qtyingrams = parsedQuantity;
         } else if (quantitytype === 'l') {
-            qtyingrams = quantity * 1000;
+            qtyingrams = parsedQuantity * 1000;
         } else {
             return res.status(400).json(createResponse(false, 'Invalid quantity type'));
         }
 
-        var query = item;
+        if (isNaN(qtyingrams) || qtyingrams <= 0) {
+            return res.status(400).json(createResponse(false, 'Invalid quantity calculation'));
+        }
+
+        // Use Edamam Nutrition Analysis via RapidAPI
+        const rapidApiKey = process.env.RAPIDAPI_KEY;
+        if (!rapidApiKey) {
+            return res.status(500).json(createResponse(false, 'Nutrition API key not configured. Please contact administrator.'));
+        }
+
+        // Build query string for Edamam Nutrition Analysis API (RapidAPI)
+        // Format: ingr=100g apple with nutrition-type=cooking
+        const ingrText = `${qtyingrams}g ${item}`;
+        const apiUrl = `https://edamam-edamam-nutrition-analysis.p.rapidapi.com/api/nutrition-data?nutrition-type=cooking&ingr=${encodeURIComponent(ingrText)}`;
+
+        console.log('Calling Edamam RapidAPI for:', item, 'Quantity:', qtyingrams, 'g');
+        console.log('Query text:', ingrText);
+
         request.get({
-            url: 'https://api.api-ninjas.com/v1/nutrition?query=' + query,
+            url: apiUrl,
             headers: {
-                'X-Api-Key': process.env.NUTRITION_API_KEY,
+                'Accept': 'application/json',
+                'X-RapidAPI-Key': rapidApiKey.trim(),
+                'X-RapidAPI-Host': 'edamam-edamam-nutrition-analysis.p.rapidapi.com',
             },
         }, async function (error, response, body) {
-            if (error) throw error;
-            else if (response.statusCode != 200) throw new Error(`Error: ${response.statusCode} ${body.toString('utf8')}`);
-            else {
-                body = JSON.parse(body);
-                let calorieIntake = (body[0].calories / body[0].serving_size_g) * parseInt(qtyingrams);
+            if (error) {
+                return res.status(500).json(createResponse(false, 'Error fetching nutrition data: ' + error.message));
+            }
+            
+            if (response.statusCode !== 200) {
+                let errorMessage = `Nutrition API error: ${response.statusCode}`;
+                try {
+                    const errorBody = JSON.parse(body);
+                    if (errorBody.message) {
+                        errorMessage = errorBody.message;
+                    } else if (errorBody.error) {
+                        errorMessage = errorBody.error;
+                    }
+                    console.error('Edamam RapidAPI Error Response:', errorBody);
+                } catch (e) {
+                    console.error('Edamam RapidAPI Error Body (raw):', body);
+                }
+                return res.status(response.statusCode).json(createResponse(false, errorMessage));
+            }
+            
+            try {
+                const nutritionData = JSON.parse(body);
+                
+                // Validate API response structure
+                if (!nutritionData || typeof nutritionData.calories === 'undefined') {
+                    return res.status(400).json(createResponse(false, 'No nutrition data found for this food item. Please try a more specific item name (e.g., "chicken breast" instead of "chicken").'));
+                }
+                
+                const calories = parseFloat(nutritionData.calories);
+                
+                // Validate calories
+                if (isNaN(calories) || calories < 0) {
+                    return res.status(400).json(createResponse(false, 'Invalid nutrition data received. Please try a different food item.'));
+                }
+                
+                // Extract detailed nutrition information
+                const totalNutrients = nutritionData.totalNutrients || {};
+                
+                const protein = totalNutrients.PROCNT?.quantity || 0;
+                const carbs = totalNutrients.CHOCDF?.quantity || 0;
+                const fat = totalNutrients.FAT?.quantity || 0;
+                const fiber = totalNutrients.FIBTG?.quantity || 0;
+                const sugar = totalNutrients.SUGAR?.quantity || 0;
+                const sodium = totalNutrients.NA?.quantity ? totalNutrients.NA.quantity / 1000 : 0; // mg to g
+                
+                const calorieIntake = Math.round(calories);
+                
+                if (isNaN(calorieIntake) || !isFinite(calorieIntake) || calorieIntake < 0) {
+                    return res.status(400).json(createResponse(false, 'Error calculating calories. Please check your input values.'));
+                }
+                
                 const userId = req.userId;
                 const user = await User.findOne({ _id: userId });
-                if (!user) throw new Error('User not found');
+                if (!user) {
+                    return res.status(404).json(createResponse(false, 'User not found'));
+                }
+                
+                // Store comprehensive nutrition data
                 user.calorieIntake.push({
                     item,
                     date: new Date(date),
-                    quantity,
+                    quantity: parsedQuantity,
                     quantitytype,
-                    calorieIntake: parseInt(calorieIntake)
+                    calorieIntake: calorieIntake,
+                    protein: Math.round(protein * 10) / 10,
+                    carbs: Math.round(carbs * 10) / 10,
+                    fat: Math.round(fat * 10) / 10,
+                    fiber: Math.round(fiber * 10) / 10,
+                    sugar: Math.round(sugar * 10) / 10,
+                    sodium: Math.round(sodium * 10) / 10,
                 });
+                
                 await user.save();
-                res.json(createResponse(true, 'Calorie intake added successfully'));
+                res.json(createResponse(true, 'Calorie intake added successfully', {
+                    calories: calorieIntake,
+                    protein: Math.round(protein * 10) / 10,
+                    carbs: Math.round(carbs * 10) / 10,
+                    fat: Math.round(fat * 10) / 10,
+                }));
+            } catch (parseError) {
+                console.error('Error parsing nutrition data:', parseError);
+                return res.status(500).json(createResponse(false, 'Error processing nutrition data: ' + parseError.message));
             }
         });
     } catch (err) {

@@ -23,6 +23,12 @@ const sanitizeUser = (user) => {
     if (!user) return null;
     const userObj = user.toObject ? user.toObject() : { ...user };
     delete userObj.password;
+    // ensure defaults for new social fields
+    userObj.avatarUrl = userObj.avatarUrl || '';
+    userObj.coverUrl = userObj.coverUrl || '';
+    userObj.username = userObj.username || '';
+    userObj.bio = userObj.bio || '';
+    userObj.isPrivate = !!userObj.isPrivate;
     return userObj;
 };
 
@@ -218,6 +224,34 @@ router.post('/checklogin', authTokenHandler, async (req, res, next) => {
         ok: true,
         message: 'User authenticated successfully'
     });
+});
+
+// Update profile (name, avatar)
+router.put('/profile', authTokenHandler, async (req, res) => {
+    try {
+        const { name, avatarUrl, username, bio, isPrivate, coverUrl } = req.body;
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json(createResponse(false, 'User not found'));
+        }
+        if (name !== undefined) user.name = name;
+        if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+        if (coverUrl !== undefined) user.coverUrl = coverUrl;
+        if (bio !== undefined) user.bio = bio;
+        if (isPrivate !== undefined) user.isPrivate = !!isPrivate;
+        if (username !== undefined) {
+            const existingUser = await User.findOne({ username, _id: { $ne: req.userId } });
+            if (existingUser) {
+                return res.status(400).json(createResponse(false, 'Username already taken'));
+            }
+            user.username = username;
+        }
+        await user.save();
+        return res.json(createResponse(true, 'Profile updated', sanitizeUser(user)));
+    } catch (err) {
+        console.error('Error updating profile:', err);
+        return res.status(500).json(createResponse(false, err.message || 'Failed to update profile'));
+    }
 });
 
 // Logout - clear auth cookies

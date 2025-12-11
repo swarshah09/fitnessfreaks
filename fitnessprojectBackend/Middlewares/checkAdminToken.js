@@ -1,7 +1,11 @@
 const jwt = require('jsonwebtoken');
 
 function checkAdminToken(req, res, next) {
-    const adminAuthToken = req.cookies.adminAuthToken;
+    // Check for token in cookies (for backend-to-backend) or Authorization header (for frontend)
+    const adminAuthToken = req.cookies.adminAuthToken || 
+                          (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') 
+                           ? req.headers.authorization.substring(7) 
+                           : null);
 
     if (!adminAuthToken) {
         return res.status(401).json({ message: 'Admin authentication failed: No adminAuthToken provided', ok: false });

@@ -15,6 +15,31 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    username: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true,
+    },
+    bio: {
+        type: String,
+        default: ''
+    },
+    isPrivate: {
+        type: Boolean,
+        default: false
+    },
+    lastSeen: {
+        type: Date,
+    },
+    avatarUrl: {
+        type: String,
+        default: ''
+    },
+    coverUrl: {
+        type: String,
+        default: ''
+    },
     weight: [
         {
             weight: {
@@ -78,6 +103,31 @@ const userSchema = new mongoose.Schema({
             calorieIntake: {
                 type: Number,
                 required: true,
+            },
+            // Additional nutrition details (optional)
+            protein: {
+                type: Number,
+                default: 0,
+            },
+            carbs: {
+                type: Number,
+                default: 0,
+            },
+            fat: {
+                type: Number,
+                default: 0,
+            },
+            fiber: {
+                type: Number,
+                default: 0,
+            },
+            sugar: {
+                type: Number,
+                default: 0,
+            },
+            sodium: {
+                type: Number,
+                default: 0,
             },
 
         }

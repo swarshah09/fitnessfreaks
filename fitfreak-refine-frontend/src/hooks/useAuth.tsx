@@ -5,6 +5,11 @@ interface AuthUser {
   _id: string;
   email: string;
   name?: string;
+  avatarUrl?: string;
+  username?: string;
+  bio?: string;
+  isPrivate?: boolean;
+  coverUrl?: string;
 }
 
 interface SignUpMetadata {
@@ -65,6 +70,11 @@ const mapAuthUser = (data: unknown): AuthUser | null => {
     _id: maybeUser._id,
     email: maybeUser.email,
     name: maybeUser.name,
+    avatarUrl: (maybeUser as any).avatarUrl,
+    username: (maybeUser as any).username,
+    bio: (maybeUser as any).bio,
+    isPrivate: (maybeUser as any).isPrivate,
+    coverUrl: (maybeUser as any).coverUrl,
   };
 };
 
@@ -150,6 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const { data } = await api.post<ApiResponse<LoginSuccessData>>(endpoints.login, { email, password });
+      // Store auth token if provided (for Bearer token auth)
+      if (data?.data?.authToken) {
+        localStorage.setItem('authToken', data.data.authToken);
+      }
+      if (data?.data?.refreshToken) {
+        localStorage.setItem('refreshToken', data.data.refreshToken);
+      }
       if (data?.data?.user) {
         const mapped = mapAuthUser(data.data.user);
         setUser(mapped);
@@ -169,12 +186,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+    // Clear tokens from localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 
   const updateProfile = async (_updates: Record<string, unknown>) => {
     if (!user) return { error: { message: 'No user logged in' } };
-    return { error: { message: 'Not implemented' } };
+    try {
+      const { data } = await api.put('/auth/profile', _updates);
+      if (data?.ok && data?.data) {
+        const mapped = mapAuthUser(data.data);
+        setUser(mapped);
+        return { error: null };
+      }
+      return { error: { message: data?.message || 'Update failed' } };
+    } catch (error: unknown) {
+      const message = getErrorMessage(error, 'Update failed');
+      return { error: { message } };
+    }
   };
 
   const value = {

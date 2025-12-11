@@ -9,11 +9,14 @@ import {
   Droplets,
   Moon,
   Weight,
+  Footprints,
   Calculator,
   TrendingUp,
   BookOpen,
+  Notebook,
+  Hash,
+  UserCircle2,
   Users,
-  Settings,
   X,
 } from "lucide-react";
 
@@ -61,6 +64,12 @@ const navigation = [
     description: "Sleep quality and duration"
   },
   {
+    name: "Steps", 
+    href: "/steps", 
+    icon: Footprints,
+    description: "Daily step count tracking"
+  },
+  {
     name: "Weight", 
     href: "/weight", 
     icon: Weight,
@@ -79,10 +88,28 @@ const navigation = [
     description: "Track your improvements"
   },
   {
-    name: "Handbook", 
-    href: "/handbook", 
-    icon: BookOpen,
-    description: "Fitness guides and tips"
+    name: "Recipes", 
+    href: "/recipes", 
+    icon: Utensils,
+    description: "High-protein fitness recipes"
+  },
+  {
+    name: "FitGram", 
+    href: "/fitgram", 
+    icon: Hash,
+    description: "Fitness social feed"
+  },
+  {
+    name: "Daily Activity", 
+    href: "/activity", 
+    icon: Notebook,
+    description: "Log workouts and attendance"
+  },
+  {
+    name: "FitGram Profile", 
+    href: "/fitgram/me", 
+    icon: UserCircle2,
+    description: "Your FitGram profile"
   },
 ];
 
@@ -92,12 +119,6 @@ const adminNavigation = [
     href: "/admin/users", 
     icon: Users,
     description: "Manage users"
-  },
-  {
-    name: "Settings", 
-    href: "/settings", 
-    icon: Settings,
-    description: "App settings"
   },
 ];
 
