@@ -42,9 +42,11 @@ console.log('Recipes routes imported');
 
 
 require('dotenv').config();
-require('./db')
 
 app.use(bodyParser.json());
+
+// Import database connection
+const connectDB = require('./db');
 const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:5173',
@@ -216,7 +218,14 @@ app.get('/', (req, res) => {
     res.json({ message: 'The API is working' });
 });
 
-
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Start server after database connection is established
+connectDB()
+    .then(() => {
+        server.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('Failed to connect to database:', err);
+        process.exit(1);
+    });
