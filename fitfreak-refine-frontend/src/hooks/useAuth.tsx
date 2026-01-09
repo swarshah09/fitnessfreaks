@@ -86,9 +86,33 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     return error.message;
   }
   if (error && typeof error === 'object') {
-    const maybeResponse = error as { response?: { data?: { message?: string } } };
-    if (typeof maybeResponse.response?.data?.message === 'string') {
+    const maybeResponse = error as { 
+      response?: { 
+        data?: { 
+          message?: string;
+          error?: string;
+        };
+        status?: number;
+      } 
+    };
+    
+    // Check for specific error messages
+    if (maybeResponse.response?.data?.message) {
       return maybeResponse.response.data.message;
+    }
+    if (maybeResponse.response?.data?.error) {
+      return maybeResponse.response.data.error;
+    }
+    
+    // Handle specific status codes with user-friendly messages
+    if (maybeResponse.response?.status === 401) {
+      return 'Invalid email or password. Please check your credentials and try again.';
+    }
+    if (maybeResponse.response?.status === 400) {
+      return 'Invalid credentials. Please check your email and password.';
+    }
+    if (maybeResponse.response?.status === 404) {
+      return 'User not found. Please check your email address.';
     }
   }
   return fallback;
@@ -105,7 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const mappedUser = mapAuthUser(data);
       setUser(mappedUser);
       return mappedUser;
-    } catch (err) {
+    } catch (err: unknown) {
+      // Silently handle 401 errors (expected when user is not authenticated)
+      const error = err as { response?: { status?: number } };
+      if (error?.response?.status === 401) {
+        // Clear any stale tokens
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
+        return null;
+      }
+      // For other errors, still clear user but don't log
       setUser(null);
       return null;
     } finally {
@@ -159,7 +193,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Validate input before making request
+      if (!email || !password) {
+        return { error: { message: 'Please enter both email and password' } };
+      }
+
       const { data } = await api.post<ApiResponse<LoginSuccessData>>(endpoints.login, { email, password });
+      
+      // Check if login was successful
+      if (!data?.ok) {
+        const errorMessage = data?.message || 'Invalid email or password. Please check your credentials and try again.';
+        return { error: { message: errorMessage } };
+      }
+
       // Store auth token if provided (for Bearer token auth)
       if (data?.data?.authToken) {
         localStorage.setItem('authToken', data.data.authToken);
@@ -175,7 +221,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { error: null };
     } catch (error: unknown) {
-      const message = getErrorMessage(error, 'Login failed');
+      const errorObj = error as { response?: { status?: number; data?: { message?: string; ok?: boolean } } };
+      
+      // Handle specific error cases
+      if (errorObj?.response?.status === 401 || errorObj?.response?.status === 400) {
+        const errorMessage = errorObj.response.data?.message || 'Invalid email or password. Please check your credentials and try again.';
+        return { error: { message: errorMessage } };
+      }
+      
+      const message = getErrorMessage(error, 'Login failed. Please check your credentials and try again.');
       return { error: { message } };
     }
   };

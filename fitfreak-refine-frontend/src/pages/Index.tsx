@@ -48,9 +48,67 @@ const Index = () => {
   const [modalData, setModalData] = useState<any>(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Fallback function for individual API calls if combined endpoint fails
+  const fetchFallbackData = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      // Fetch calories
+      const caloriesRes = await api.post('/calorieintake/getcalorieintakebydate', { date: today });
+      const caloriesGoalRes = await api.get('/calorieintake/getgoalcalorieintake');
+      if (caloriesRes.data?.ok) {
+        const total = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.calorieIntake || 0), 0) || 0;
+        const protein = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.protein || 0), 0) || 0;
+        const carbs = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.carbs || 0), 0) || 0;
+        const goal = caloriesGoalRes.data?.ok ? caloriesGoalRes.data.data?.maxCalorieIntake || 0 : 0;
+        setCaloriesData({ total, goal, protein, carbs });
+      }
 
-  // Fetch all today's data
+      // Fetch water, sleep, steps, weight, streak in parallel
+      const [waterRes, waterGoalRes, sleepRes, sleepGoalRes, stepsRes, stepsGoalRes, weightRes, streakRes] = await Promise.all([
+        api.post('/watertrack/getwaterbydate', { date: today }).catch(() => ({ data: { ok: false } })),
+        api.get('/watertrack/getusergoalwater').catch(() => ({ data: { ok: false } })),
+        api.post('/sleeptrack/getsleepbydate', { date: today }).catch(() => ({ data: { ok: false } })),
+        api.get('/sleeptrack/getusersleep').catch(() => ({ data: { ok: false } })),
+        api.post('/steptrack/getstepsbydate', { date: today }).catch(() => ({ data: { ok: false } })),
+        api.get('/steptrack/getusergoalsteps').catch(() => ({ data: { ok: false } })),
+        api.get('/weighttrack/getusergoalweight').catch(() => ({ data: { ok: false } })),
+        api.get('/daily-activity/streak').catch(() => ({ data: { ok: false } })),
+      ]);
+
+      if (waterRes.data?.ok) {
+        const total = waterRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.amountInMilliliters || 0), 0) || 0;
+        const goal = waterGoalRes.data?.ok ? waterGoalRes.data.data?.goalWater || 4000 : 4000;
+        setWaterData({ total, goal });
+      }
+
+      if (sleepRes.data?.ok) {
+        const entries = sleepRes.data.data || [];
+        const total = entries.length > 0 ? entries.reduce((sum: number, entry: any) => sum + (entry.durationInHrs || 0), 0) / entries.length : 0;
+        const goal = sleepGoalRes.data?.ok ? sleepGoalRes.data.data?.goalSleep || 8 : 8;
+        setSleepData({ total, goal });
+      }
+
+      if (stepsRes.data?.ok) {
+        const total = stepsRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.steps || 0), 0) || 0;
+        const goal = stepsGoalRes.data?.ok ? stepsGoalRes.data.data?.totalSteps || 10000 : 10000;
+        setStepsData({ total, goal });
+      }
+
+      if (weightRes.data?.ok) {
+        const current = weightRes.data.data?.currentWeight || null;
+        const goal = weightRes.data.data?.goalWeight || null;
+        setWeightData({ current, goal });
+      }
+
+      if (streakRes.data?.ok) {
+        setStreakData(streakRes.data.data?.streak ?? 0);
+      }
+    } catch (error) {
+      console.error('Error in fallback data fetch:', error);
+    }
+  }, []);
+
+  // Optimized: Fetch all dashboard data in one API call
   const fetchTodayData = useCallback(async () => {
     if (!isAuthenticated) {
       setIsLoading(false);
@@ -60,92 +118,59 @@ const Index = () => {
     try {
       setIsLoading(true);
       
-      // Fetch calories
+      // Use the new optimized combined dashboard endpoint
       try {
-        const caloriesRes = await api.post('/calorieintake/getcalorieintakebydate', { date: today });
-        const caloriesGoalRes = await api.get('/calorieintake/getgoalcalorieintake');
-        if (caloriesRes.data?.ok) {
-          const total = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.calorieIntake || 0), 0) || 0;
-          const protein = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.protein || 0), 0) || 0;
-          const carbs = caloriesRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.carbs || 0), 0) || 0;
-          const goal = caloriesGoalRes.data?.ok ? caloriesGoalRes.data.data?.maxCalorieIntake || 0 : 0;
-          setCaloriesData({ total, goal, protein, carbs });
+        const dashboardRes = await api.get('/dashboard/summary');
+        if (dashboardRes.data?.ok && dashboardRes.data.data) {
+          const data = dashboardRes.data.data;
+          
+          // Set all data from single response
+          setCaloriesData({
+            total: data.calories?.total || 0,
+            goal: data.calories?.goal || 0,
+            protein: data.calories?.protein || 0,
+            carbs: data.calories?.carbs || 0,
+          });
+          
+          setWaterData({
+            total: data.water?.total || 0,
+            goal: data.water?.goal || 4000,
+          });
+          
+          setSleepData({
+            total: data.sleep?.total || 0,
+            goal: data.sleep?.goal || 8,
+          });
+          
+          setStepsData({
+            total: data.steps?.total || 0,
+            goal: data.steps?.goal || 10000,
+          });
+          
+          setWeightData({
+            current: data.weight?.current || null,
+            goal: data.weight?.goal || null,
+          });
+          
+          setStreakData(data.streak || 0);
         }
       } catch (e) {
-        console.error('Error fetching calories:', e);
-      }
-
-      // Fetch water
-      try {
-        const waterRes = await api.post('/watertrack/getwaterbydate', { date: today });
-        const waterGoalRes = await api.get('/watertrack/getusergoalwater');
-        if (waterRes.data?.ok) {
-          const total = waterRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.amountInMilliliters || 0), 0) || 0;
-          const goal = waterGoalRes.data?.ok ? waterGoalRes.data.data?.goalWater || 4000 : 4000;
-          setWaterData({ total, goal });
-        }
-      } catch (e) {
-        console.error('Error fetching water:', e);
-      }
-
-      // Fetch sleep
-      try {
-        const sleepRes = await api.post('/sleeptrack/getsleepbydate', { date: today });
-        const sleepGoalRes = await api.get('/sleeptrack/getusersleep');
-        if (sleepRes.data?.ok) {
-          const entries = sleepRes.data.data || [];
-          const total = entries.length > 0 ? entries.reduce((sum: number, entry: any) => sum + (entry.durationInHrs || 0), 0) / entries.length : 0;
-          const goal = sleepGoalRes.data?.ok ? sleepGoalRes.data.data?.goalSleep || 8 : 8;
-          setSleepData({ total, goal });
-        }
-      } catch (e) {
-        console.error('Error fetching sleep:', e);
-      }
-
-      // Fetch steps
-      try {
-        const stepsRes = await api.post('/steptrack/getstepsbydate', { date: today });
-        const stepsGoalRes = await api.get('/steptrack/getusergoalsteps');
-        if (stepsRes.data?.ok) {
-          const total = stepsRes.data.data?.reduce((sum: number, entry: any) => sum + (entry.steps || 0), 0) || 0;
-          const goal = stepsGoalRes.data?.ok ? stepsGoalRes.data.data?.totalSteps || 10000 : 10000;
-          setStepsData({ total, goal });
-        }
-      } catch (e) {
-        console.error('Error fetching steps:', e);
-      }
-
-      // Fetch weight
-      try {
-        const weightGoalRes = await api.get('/weighttrack/getusergoalweight');
-        if (weightGoalRes.data?.ok) {
-          const current = weightGoalRes.data.data?.currentWeight || null;
-          const goal = weightGoalRes.data.data?.goalWeight || null;
-          setWeightData({ current, goal });
-        }
-      } catch (e) {
-        console.error('Error fetching weight:', e);
-      }
-
-      // Fetch daily activity streak
-      try {
-        const streakRes = await api.get('/daily-activity/streak');
-        if (streakRes.data?.ok) {
-          setStreakData(streakRes.data.data?.streak ?? 0);
-        }
-      } catch (e) {
-        console.error('Error fetching streak:', e);
+        console.error('Error fetching dashboard data:', e);
+        // Fallback to individual API calls if combined endpoint fails
+        await fetchFallbackData();
       }
     } catch (error) {
       console.error('Error fetching today\'s data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, today]);
+  }, [isAuthenticated, fetchFallbackData]);
 
   useEffect(() => {
-    fetchTodayData();
-  }, [fetchTodayData]);
+    if (isAuthenticated) {
+      fetchTodayData();
+    }
+  }, [isAuthenticated, fetchTodayData]);
 
   // Fetch detailed data for modal
   const fetchMetricDetails = useCallback(async (metricTitle: string) => {

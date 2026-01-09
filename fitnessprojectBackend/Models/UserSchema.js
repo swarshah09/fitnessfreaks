@@ -190,6 +190,16 @@ const userSchema = new mongoose.Schema({
     ],
 }, {timestamps: true});
 
+// Add indexes for frequently queried fields to improve query performance
+userSchema.index({ email: 1 }); // Already unique, but explicit index helps
+userSchema.index({ 'calorieIntake.date': 1, 'calorieIntake._id': 1 });
+userSchema.index({ 'sleep.date': 1, 'sleep._id': 1 });
+userSchema.index({ 'steps.date': 1, 'steps._id': 1 });
+userSchema.index({ 'water.date': 1, 'water._id': 1 });
+userSchema.index({ 'workouts.date': 1, 'workouts._id': 1 });
+userSchema.index({ 'weight.date': -1 }); // Descending for latest first
+userSchema.index({ 'height.date': -1 }); // Descending for latest first
+
 userSchema.pre('save', async function (next) {
     const user = this;
 

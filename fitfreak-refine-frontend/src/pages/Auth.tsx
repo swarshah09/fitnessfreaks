@@ -49,20 +49,27 @@ export default function Auth() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate inputs
+    if (!loginData.email || !loginData.password) {
+      toast.error('Please enter both email and password');
+      return;
+    }
+
     setIsLoginLoading(true);
 
     try {
-      const { error } = await signIn(loginData.email, loginData.password);
+      const { error } = await signIn(loginData.email.trim(), loginData.password);
 
       if (error) {
-        toast.error(error.message || 'Login failed');
+        toast.error(error.message || 'Invalid credentials. Please check your email and password.');
       } else {
-        toast.success('Login successful!');
+        toast.success('Login successful! Redirecting...');
         navigate('/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Network error. Please try again.');
+      toast.error('Network error. Please check your connection and try again.');
     } finally {
       setIsLoginLoading(false);
     }

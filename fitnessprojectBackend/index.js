@@ -3,11 +3,15 @@ const app = express();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
+const compression = require('compression');
 
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const PORT = process.env.PORT || 8000;
 const cookieParser = require('cookie-parser');
+
+// Enable compression for all responses (gzip)
+app.use(compression());
 
 const authRoutes = require('./Routes/Auth');
 const calorieIntakeRoutes = require('./Routes/CalorieIntake');
@@ -23,6 +27,7 @@ const reportRoutes = require('./Routes/Report');
 const exerciseRoutes = require('./Routes/Exercises');
 const dailyActivityRoutes = require('./Routes/DailyActivity');
 const recipeRoutes = require('./Routes/Recipes');
+const dashboardRoutes = require('./Routes/Dashboard');
 const socialProfileRoutes = require('./Routes/SocialProfile');
 const socialFollowRoutes = require('./Routes/SocialFollow');
 const socialPostsRoutes = require('./Routes/SocialPosts');
@@ -197,6 +202,7 @@ app.use('/report', reportRoutes);
 app.use('/exercises', exerciseRoutes);
 app.use('/daily-activity', dailyActivityRoutes);
 app.use('/recipes', recipeRoutes);
+app.use('/dashboard', dashboardRoutes);
 app.use('/social', socialProfileRoutes);
 app.use('/social/follow', socialFollowRoutes);
 app.use('/social', socialPostsRoutes);

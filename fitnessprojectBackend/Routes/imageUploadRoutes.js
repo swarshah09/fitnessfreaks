@@ -22,21 +22,31 @@ router.post('/uploadimage', upload.single('myimage'), async (req, res) => {
         return res.status(400).json({ ok: false, error: 'No image file provided' });
     }
 
+    // Optimize image: resize, convert to WebP, and compress
     sharp(file.buffer)
-        .resize({ width: 800 })
+        .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 }) // Convert to WebP format for better compression
         .toBuffer(async (err, data, info) => {
             if (err) {
                 console.error('Image processing error:', err);
                 return res.status(500).json({ ok: false, error: 'Error processing image' });
             }
 
-            cloudinary.uploader.upload_stream({ resource_type: 'auto' }, async (error, result) => {
+            // Upload with Cloudinary transformations for optimized delivery
+            cloudinary.uploader.upload_stream({ 
+                resource_type: 'auto',
+                format: 'webp',
+                quality: 'auto',
+                fetch_format: 'auto',
+            }, async (error, result) => {
                 if (error) {
                     console.error('Cloudinary Upload Error:', error);
                     return res.status(500).json({ ok: false, error: 'Error uploading image to Cloudinary' });
                 }
 
-                res.json({ ok: true, imageUrl: result.url, message: 'Image uploaded successfully' });
+                // Return optimized URL with transformations
+                const optimizedUrl = result.url.replace('/upload/', '/upload/q_auto,f_auto,w_auto/');
+                res.json({ ok: true, imageUrl: optimizedUrl, message: 'Image uploaded successfully' });
             }).end(data);
         })
 });
