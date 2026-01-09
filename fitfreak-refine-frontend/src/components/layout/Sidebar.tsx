@@ -29,7 +29,7 @@ interface SidebarProps {
 const navigation = [
   {
     name: "Dashboard", 
-    href: "/", 
+    href: "/dashboard", 
     icon: Home,
     description: "Overview of your fitness journey"
   },

@@ -32,7 +32,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
 
   const searchItems = useMemo(() => [
-    { label: "Dashboard", path: "/" },
+    { label: "Dashboard", path: "/dashboard" },
     { label: "Workouts", path: "/workouts", tags: ["exercise", "training", "start workout", "start-workout"] },
     { label: "Start Workout", path: "/start-workout", tags: ["quick", "timer", "instant"] },
     { label: "Nutrition", path: "/nutrition", tags: ["calories", "food", "meals"] },

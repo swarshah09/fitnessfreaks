@@ -43,7 +43,7 @@ export default function Auth() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, navigate]);
 
@@ -58,7 +58,7 @@ export default function Auth() {
         toast.error(error.message || 'Login failed');
       } else {
         toast.success('Login successful!');
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
