@@ -54,7 +54,7 @@ const queryClient = new QueryClient({
 
 // Loading fallback component
 const PageLoader = () => (
-  <div className="min-h-screen bg-gradient-subtle p-6">
+  <div className="min-h-screen bg-background p-6">
     <div className="max-w-7xl mx-auto space-y-6">
       <Skeleton className="h-20 w-full" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

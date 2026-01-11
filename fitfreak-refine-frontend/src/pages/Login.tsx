@@ -45,15 +45,15 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <Card className="w-full max-w-md shadow-elegant">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">F</span>
+            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
+              <span className="text-xl font-semibold text-primary-foreground">F</span>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Welcome Back</CardTitle>
           <CardDescription>
             Sign in to continue your fitness journey
           </CardDescription>
@@ -105,7 +105,7 @@ export default function Login() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-gradient-primary text-white hover:opacity-90"
+              className="w-full bg-primary text-white hover:opacity-90"
               disabled={isLoading}
             >
               {isLoading ? "Signing in..." : "Sign In"}

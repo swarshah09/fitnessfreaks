@@ -129,10 +129,10 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">FitTracker</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Fitness Freak</CardTitle>
           <CardDescription>
             Your journey to better health starts here
           </CardDescription>

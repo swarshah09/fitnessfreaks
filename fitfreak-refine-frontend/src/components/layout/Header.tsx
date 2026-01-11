@@ -72,8 +72,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="flex h-full items-center justify-between px-4 md:px-6">
+    <header className="h-16 border-b border-border bg-background sticky top-0 z-50">
+      <div className="flex h-full items-center justify-between px-6 md:px-8 lg:px-12">
         {/* Left Section - Logo & Menu */}
         <div className="flex items-center gap-4">
           {onMenuClick && (
@@ -87,13 +87,12 @@ export function Header({ onMenuClick }: HeaderProps) {
             </Button>
           )}
           
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Dumbbell className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="bg-card px-4 py-2 rounded-full">
+              <span className="text-lg font-semibold text-foreground">
+                Fitness Freak
+              </span>
             </div>
-            <span className="text-xl font-bold">
-              Fitness<span className="text-primary">Freaks</span>
-            </span>
           </div>
         </div>
 

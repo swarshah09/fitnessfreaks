@@ -377,15 +377,15 @@ const Index = () => {
         />
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 space-y-6">
+        <main className="flex-1 p-6 md:p-8 lg:p-10 space-y-8">
           {/* Hero Section */}
           <HeroSection user={user} />
 
           {/* Fitness Metrics Grid */}
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Today's Overview</h2>
-              <p className="text-muted-foreground">
+              <h2 className="text-2xl md:text-3xl font-semibold">Today's Overview</h2>
+              <p className="text-muted-foreground text-sm">
                 {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -402,7 +402,7 @@ const Index = () => {
                   <MetricCard
                     key={metric.title}
                     {...metric}
-                    className="hover:scale-105 transition-transform duration-200"
+                    className="transition-all duration-200 hover:shadow-md"
                     onAdd={() => {
                       if (viewPath) {
                         navigate(viewPath);

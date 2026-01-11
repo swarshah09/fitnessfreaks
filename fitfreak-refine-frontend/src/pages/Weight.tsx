@@ -216,7 +216,7 @@ export default function Weight() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
       <div className="flex">

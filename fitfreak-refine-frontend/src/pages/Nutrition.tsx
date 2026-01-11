@@ -218,7 +218,7 @@ export default function Nutrition() {
   const remainingCalories = calorieGoal ? calorieGoal.maxCalorieIntake - totalCalories : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
       <div className="flex">
@@ -408,7 +408,7 @@ export default function Nutrition() {
                 <Button 
                   onClick={addCalorieEntry}
                   disabled={isAdding}
-                  className="w-full bg-gradient-primary text-white hover:opacity-90"
+                  className="w-full bg-primary text-white hover:opacity-90"
                 >
                   {isAdding ? "Adding..." : "Add Food Item"}
                 </Button>

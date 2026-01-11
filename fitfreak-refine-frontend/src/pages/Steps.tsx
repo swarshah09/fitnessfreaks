@@ -188,7 +188,7 @@ export default function Steps() {
   const remainingSteps = goalSteps - totalSteps;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
       <div className="flex">

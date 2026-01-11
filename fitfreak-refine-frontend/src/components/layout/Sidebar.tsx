@@ -133,25 +133,17 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
         to={item.href}
         onClick={onClose}
         className={cn(
-          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent group",
+          "flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-colors",
           isActive 
-            ? "bg-primary text-primary-foreground shadow-sm" 
-            : "text-muted-foreground hover:text-foreground"
+            ? "bg-primary text-primary-foreground" 
+            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         )}
       >
         <item.icon className={cn(
           "h-4 w-4 transition-colors",
-          isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
+          isActive ? "text-primary-foreground" : "text-muted-foreground"
         )} />
-        <div className="flex flex-col">
-          <span className="font-medium">{item.name}</span>
-          <span className={cn(
-            "text-xs",
-            isActive ? "text-primary-foreground/80" : "text-muted-foreground"
-          )}>
-            {item.description}
-          </span>
-        </div>
+        <span className="font-medium">{item.name}</span>
       </NavLink>
     );
   };
@@ -168,14 +160,14 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <div className={cn(
-        "fixed left-0 top-0 z-50 h-full w-80 bg-card border-r transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+        "fixed left-0 top-0 z-50 h-full w-72 bg-background border-r border-border transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full",
         className
       )}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-lg font-semibold">Navigation</h2>
+          <div className="flex items-center justify-between p-6 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">Navigation</h2>
             {onClose && (
               <Button
                 variant="ghost"
@@ -190,28 +182,21 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
 
           {/* Navigation */}
           <div className="flex-1 overflow-auto p-4">
-            <div className="space-y-2">
-              <div className="mb-6">
-                <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Main Menu
-                </h3>
-                <nav className="space-y-1">
-                  {navigation.map((item) => (
-                    <NavItem key={item.name} item={item} />
-                  ))}
-                </nav>
-              </div>
+            <nav className="space-y-1">
+              {navigation.map((item) => (
+                <NavItem key={item.name} item={item} />
+              ))}
+            </nav>
 
-              <div>
-                <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Admin
-                </h3>
-                <nav className="space-y-1">
-                  {adminNavigation.map((item) => (
-                    <NavItem key={item.name} item={item} />
-                  ))}
-                </nav>
-              </div>
+            <div className="mt-6">
+              <h3 className="mb-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Admin
+              </h3>
+              <nav className="space-y-1">
+                {adminNavigation.map((item) => (
+                  <NavItem key={item.name} item={item} />
+                ))}
+              </nav>
             </div>
           </div>
 

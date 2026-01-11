@@ -114,58 +114,54 @@ export function HeroSection({ user }: HeroSectionProps) {
   ];
 
   return (
-    <div className="relative min-h-[400px] md:min-h-[500px] rounded-2xl overflow-hidden animate-fade-in">
+    <div className="relative min-h-[300px] md:min-h-[350px] rounded-xl overflow-hidden bg-muted/30 border border-border/50">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60" />
+        <div className="absolute inset-0 bg-background/80" />
       </div>
 
       {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center p-6 md:p-12">
-        <div className="max-w-2xl">
+      <div className="relative z-10 h-full flex flex-col justify-center p-8 md:p-12">
+        <div className="max-w-3xl">
           {/* Greeting */}
-          <div className="mb-6 animate-slide-up">
-            <h1 className="text-3xl md:text-5xl font-bold mb-2">
+          <div className="mb-8">
+            <h1 className="text-3xl md:text-4xl font-semibold mb-3">
               Welcome back{user?.name && `, ${user.name}`}
-              <span className="text-primary">!</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground">
+            <p className="text-lg text-muted-foreground">
               Ready to crush your fitness goals today?
             </p>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-8 animate-scale-in">
+          <div className="grid grid-cols-3 gap-4 mb-8">
             {quickStats.map((stat, index) => (
-              <Card key={stat.label} className="bg-card/50 backdrop-blur-sm border-primary/20">
-                <CardContent className="p-4 text-center">
-                  <stat.icon className={`h-6 w-6 mx-auto mb-2 ${stat.color}`} />
-                  <div className="text-lg md:text-xl font-bold">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+              <Card key={stat.label} className="border-border/50 bg-card/80">
+                <CardContent className="p-5 text-center">
+                  <stat.icon className={`h-5 w-5 mx-auto mb-2 ${stat.color}`} />
+                  <div className="text-xl font-semibold">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 animate-slide-up">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button 
               size="lg" 
-              className="group"
               onClick={() => navigate("/start-workout")}
+              className="gap-2"
             >
-              <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
               Start Workout
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Button>
             
             <Button 
               size="lg" 
               variant="outline" 
-              className="bg-card/50 backdrop-blur-sm"
               onClick={() => navigate("/progress")}
             >
               View Progress
@@ -173,8 +169,8 @@ export function HeroSection({ user }: HeroSectionProps) {
           </div>
 
           {/* Motivational Quote */}
-          <div className="mt-8 p-4 rounded-lg bg-primary/10 backdrop-blur-sm border border-primary/20 animate-fade-in">
-            <p className="text-sm italic text-foreground/80">
+          <div className="mt-8 p-5 rounded-lg bg-card/50 border border-border/50">
+            <p className="text-sm italic text-muted-foreground">
               “{quote}”
             </p>
           </div>

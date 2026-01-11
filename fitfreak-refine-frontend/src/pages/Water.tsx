@@ -189,7 +189,7 @@ export default function Water() {
   const remainingWater = goalWater - totalWater;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
       <div className="flex">

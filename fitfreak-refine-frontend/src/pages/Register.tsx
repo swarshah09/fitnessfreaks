@@ -92,15 +92,15 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <Card className="w-full max-w-2xl shadow-elegant">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-2xl border-border/50">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">F</span>
+            <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center">
+              <span className="text-xl font-semibold text-primary-foreground">F</span>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Join FitnessFreaks</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Join FitnessFreaks</CardTitle>
           <CardDescription>
             Create your account and start your fitness journey
           </CardDescription>
@@ -295,7 +295,7 @@ export default function Register() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-primary text-white hover:opacity-90"
+              className="w-full bg-primary text-white hover:opacity-90"
               disabled={isLoading}
             >
               {isLoading ? "Creating Account..." : "Create Account"}

@@ -97,7 +97,7 @@ export default function BMICalculator() {
   const idealWeightRange = getIdealWeightRange();
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
+    <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setSidebarOpen(true)} />
       
       <div className="flex">
@@ -161,7 +161,7 @@ export default function BMICalculator() {
                 <Button 
                   onClick={calculateBMI}
                   disabled={!height || !weight}
-                  className="w-full bg-gradient-primary text-white hover:opacity-90"
+                  className="w-full bg-primary text-white hover:opacity-90"
                 >
                   Calculate BMI
                 </Button>

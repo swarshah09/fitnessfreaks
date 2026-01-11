@@ -422,7 +422,7 @@ export default function Workouts() {
                     <div className="flex gap-2 pt-4">
                       <Button 
                         onClick={() => startExercise(selectedExercise)}
-                        className="flex-1 bg-gradient-primary text-white hover:opacity-90"
+                        className="flex-1 bg-primary text-white hover:opacity-90"
                       >
                         <Play className="mr-2 h-4 w-4" />
                         Log This Exercise

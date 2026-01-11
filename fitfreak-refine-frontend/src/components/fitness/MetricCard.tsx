@@ -63,12 +63,12 @@ export function MetricCard({
   const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
   
   return (
-    <Card className={cn("animate-fade-in hover:shadow-lg transition-all duration-300", className)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <Card className={cn("border-border/50 transition-all duration-200", className)}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", colors.bg)}>
+        <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", colors.bg)}>
           <Icon className={cn("h-4 w-4", colors.icon)} />
         </div>
       </CardHeader>
