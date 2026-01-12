@@ -5,6 +5,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import bigscreenBg from "@/assets/bigscreen_bg.mp4";
 import mobileBackground from "@/assets/mobile_background.mp4";
+import logo from "@/assets/logo.png";
 import { 
   Activity, 
   Dumbbell, 
@@ -163,11 +164,16 @@ const Landing = () => {
             className="flex items-center gap-3"
             whileHover={{ scale: 1.01 }}
           >
-            <div className="relative bg-card px-4 py-2 rounded-full">
-              <span className="text-lg font-semibold text-foreground">
-                Fitness Freak
-              </span>
-            </div>
+            <button
+              onClick={() => navigate("/")}
+              className="relative bg-card px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
+            >
+              <img 
+                src={logo} 
+                alt="Fitness Freak" 
+                className="h-8 w-auto object-contain"
+              />
+            </button>
           </motion.div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate("/auth")}>

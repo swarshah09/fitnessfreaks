@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import logo from "@/assets/logo.png";
 import {
   Home,
   Activity,
@@ -124,6 +125,7 @@ const adminNavigation = [
 
 export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const NavItem = ({ item }: { item: typeof navigation[0] }) => {
     const isActive = location.pathname === item.href;
@@ -167,7 +169,19 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-border">
-            <h2 className="text-base font-semibold text-foreground">Navigation</h2>
+            <button
+              onClick={() => {
+                navigate("/dashboard");
+                if (onClose) onClose();
+              }}
+              className="hover:opacity-90 transition-opacity"
+            >
+              <img 
+                src={logo} 
+                alt="Fitness Freak" 
+                className="h-8 w-auto object-contain"
+              />
+            </button>
             {onClose && (
               <Button
                 variant="ghost"

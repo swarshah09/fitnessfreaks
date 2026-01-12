@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from "@/assets/logo.png";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -132,7 +133,13 @@ export default function Auth() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold">Fitness Freak</CardTitle>
+          <div className="flex justify-center mb-4">
+            <img 
+              src={logo} 
+              alt="Fitness Freak" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
           <CardDescription>
             Your journey to better health starts here
           </CardDescription>
